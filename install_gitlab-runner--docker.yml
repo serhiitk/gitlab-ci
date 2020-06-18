@@ -1,0 +1,53 @@
+---
+- name: Run and register GitLab-Runner in a container (Docker-Server host)
+  gather_facts: no
+  hosts: docker_server
+  become: yes
+
+  vars_files:
+    - vars/default_vars.yml
+
+  tasks:
+
+    - name: Pull GitLab-Runner docker image and Run the container
+      docker_container:
+        name: gitlab-runner
+        image: "{{ docker_image }}"
+        etc_hosts: "{{ container_etc_hosts }}"
+        state: started
+        restart_policy: always
+        volumes:
+          - "/var/run/docker.sock:/var/run/docker.sock"
+          - "/srv/gitlab-runner/{{ project_repository }}/config:/etc/gitlab-runner"
+
+    - name: Checking GitLab-Runner is already registered (Ensure config.toml file existence)
+      stat:
+        path: "/srv/gitlab-runner/{{ project_repository }}/config/config.toml"
+      register: runner_config_file
+
+    - name: Copy config.toml template
+      template:
+        src: config.template.toml.j2
+        dest: /tmp/config.template.toml
+
+    - name: Registering GitLab-Runner (launch in an ephemeral gitlab-runner container)
+      docker_container:
+        name: register-runner
+        image: "{{ docker_image }}"
+        etc_hosts: "{{ container_etc_hosts }}"
+        auto_remove: yes
+        command: register >
+          --template-config /tmp/config.template.toml
+          --non-interactive
+          --url "{{ gitlab_external_url }}"
+          --registration-token "{{ registration_token }}"
+          --executor docker
+          --description "Runner assigned to {{ project_repository }}"
+          --docker-image "docker:latest"
+          --docker-volumes "/var/run/docker.sock:/var/run/docker.sock"
+          --docker-volumes "/srv/gitlab-runner/{{ project_repository }}/config:/etc/gitlab-runner"
+        volumes:
+          - "/srv/gitlab-runner/{{ project_repository }}/config:/etc/gitlab-runner"
+          - "/tmp:/tmp"
+      when: not runner_config_file.stat.exists
+...

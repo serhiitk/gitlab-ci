@@ -1,0 +1,4 @@
+---
+  - import_playbook: install_gitlab-runner--docker.yml
+  - import_playbook: docker-host_access_nexus.yml
+...

@@ -1,0 +1,35 @@
+image: docker:latest
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  CFG_NEXUS_HOST_NAME: "nexus.example.com"
+  CFG_NEXUS_REPOSITORY_PORT: 18091
+  CFG_NEXUS_REPOSITORY_NAME: "my_app1"
+  CFG_IMAGE_TAG: "${CFG_NEXUS_HOST_NAME}:${CFG_NEXUS_REPOSITORY_PORT}/${CFG_NEXUS_REPOSITORY_NAME}"
+  CFG_DOCKER_CONTAINER_NAME: "test-env-my-app1"
+
+
+before_script:
+  - docker info
+
+build_image:
+  stage: build
+  script:
+    - docker build -t $CFG_IMAGE_TAG .
+
+run_test_application:
+  stage: test
+  script:
+    - docker rm -f "${CFG_DOCKER_CONTAINER_NAME}" 2>/dev/null || true
+    - docker run --name "${CFG_DOCKER_CONTAINER_NAME}" -d -p 9080:80 $CFG_IMAGE_TAG
+    - echo "Application started at http://docker.example.com:9080/"
+
+deploy_to_nexus:
+  stage: deploy
+  script:
+    - docker login -u $CI_NEXUS_USER -p $CI_NEXUS_PASS $CI_NEXUS_HOST
+    - docker push $CFG_IMAGE_TAG

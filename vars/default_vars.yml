@@ -1,0 +1,30 @@
+---
+  registration_token: "Kc-FMv_d3qhqGTPnEVCr"
+
+  gitlab_host_ip: "192.168.16.161"
+  gitlab_url_domain: "gitlab.example.com"
+  gitlab_url_schema: "http"
+  gitlab_external_url: "{{ gitlab_url_schema }}://{{ gitlab_url_domain }}"
+
+  nexus_host_ip: "192.168.77.96"
+  nexus_url_domain: "nexus.example.com"
+  nexus_repository_port: 18091
+  nexus_repository_url: "{{ nexus_url_domain }}:{{ nexus_repository_port }}"
+
+  docker_image: "gitlab/gitlab-runner:alpine-v13.0.1"
+  project_repository: "my_project_group/my_repo1"
+
+  container_etc_hosts: >
+     {
+        '{{ gitlab_url_domain }}' : '{{ gitlab_host_ip }}',
+        '{{ nexus_url_domain }}' : '{{ nexus_host_ip }}'
+     }
+
+
+  gitlab_dependencies:
+    - 'apt-transport-https'
+    - 'ca-certificates'
+    - 'curl'
+    - 'gnupg-agent'
+    - 'software-properties-common'
+...

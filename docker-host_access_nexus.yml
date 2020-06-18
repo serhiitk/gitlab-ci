@@ -1,0 +1,29 @@
+---
+- name: Setting Docker-host connection to Nexus repository
+  gather_facts: no
+  hosts: docker_server
+  become: yes
+
+  vars_files:
+    - vars/default_vars.yml
+
+  tasks:
+
+    - name: Add needed hosts urls to /etc/hosts file
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ item }}"
+      loop:
+        - "{{ gitlab_host_ip }} {{ gitlab_url_domain }}"
+        - "{{ nexus_host_ip }} {{ nexus_url_domain }}"
+
+    - name: Create certs.d directory for SSL certificate of Nexus repository
+      file:
+        path: /etc/docker/certs.d/{{ nexus_repository_url }}
+        state: directory
+
+    - name: Copy repository SSL certificate
+      copy:
+        src: ./nexus_cert/ca.crt
+        dest: /etc/docker/certs.d/{{ nexus_repository_url }}
+...
